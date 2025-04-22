@@ -1,4 +1,4 @@
-import { testConnection, initializeAccounts, closeConnection } from './tigerbeetleClient';
+import { testConnection, initializeAccounts, closeConnection, getAccountBalances } from './tigerbeetleClient';
 
 async function main() {
   try {
@@ -11,6 +11,17 @@ async function main() {
 
     // Initialize accounts
     await initializeAccounts();
+
+    // Get and display account balances
+    const balances = await getAccountBalances();
+    console.log('\nAccount Balances:');
+    balances.forEach((balanceInfo, id) => {
+      console.log(`Account ${id}:`);
+      console.log(`  Current Balance: $${balanceInfo.currentBalance.toFixed(2)}`);
+      console.log(`  Total Amount: $${balanceInfo.totalAmount.toFixed(2)}`);
+      console.log(`  Remaining: $${(balanceInfo.totalAmount - balanceInfo.currentBalance).toFixed(2)}`);
+      console.log('---');
+    });
 
     // Close the connection
     await closeConnection();

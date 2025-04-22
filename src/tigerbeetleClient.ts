@@ -90,4 +90,57 @@ export async function closeConnection(): Promise<void> {
     console.error('Error during cleanup:', error);
     throw error;
   }
+}
+
+// Add this function after the closeConnection function
+export async function getAccountBalances(): Promise<Map<bigint, { currentBalance: number; totalAmount: number }>> {
+  try {
+    // Get all accounts
+    const accounts = await client.lookupAccounts([...Array(ACCOUNTS.length).keys()].map(i => BigInt(i + 1)));
+    
+    // Create a map of account IDs to balance information
+    const balances = new Map<bigint, { currentBalance: number; totalAmount: number }>();
+    accounts.forEach(account => {
+      balances.set(account.id, {
+        currentBalance: Number(account.debits_posted) / 100,
+        totalAmount: Number(account.credits_posted) / 100
+      });
+    });
+    
+    return balances;
+  } catch (error) {
+    console.error('Failed to get account balances:', error);
+    throw error;
+  }
+}
+
+async function main() {
+  try {
+    // Test the connection
+    const isConnected = await testConnection();
+    if (!isConnected) {
+      console.error('Failed to connect to TigerBeetle server');
+      process.exit(1);
+    }
+
+    // Initialize accounts
+    await initializeAccounts();
+
+    // Get and display account balances
+    const balances = await getAccountBalances();
+    console.log('\nAccount Balances:');
+    balances.forEach((balanceInfo, id) => {
+      console.log(`Account ${id}:`);
+      console.log(`  Current Balance: $${balanceInfo.currentBalance.toFixed(2)}`);
+      console.log(`  Total Amount: $${balanceInfo.totalAmount.toFixed(2)}`);
+      console.log(`  Remaining: $${(balanceInfo.totalAmount - balanceInfo.currentBalance).toFixed(2)}`);
+      console.log('---');
+    });
+
+    // Close the connection
+    await closeConnection();
+  } catch (error) {
+    console.error('Error during testing:', error);
+    process.exit(1);
+  }
 } 
