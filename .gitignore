@@ -2,9 +2,25 @@
 tigerbeetle
 *.tigerbeetle
 *.zip
+.data/
+*.log
+
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# TypeScript
+*.tsbuildinfo
+dist/
+*.js
+*.js.map
+
+# Environment variables
+.env
+.env.local
 
 # Environment and configuration
-.env
 config/secrets.json
 
 # Operating system files
