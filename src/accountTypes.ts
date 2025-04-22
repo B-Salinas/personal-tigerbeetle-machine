@@ -4,7 +4,20 @@ export enum AccountCategory {
   STUDENT_LOAN = 'STUDENT_LOAN',
   IOU = 'IOU',
   CHECKING = 'CHECKING',
-  DEBIT = 'DEBIT'
+}
+
+export interface PaymentSchedule {
+  dueDate: Date;
+  frequency: 'MONTHLY' | 'BIWEEKLY' | 'WEEKLY';
+  minimumPayment: number;
+}
+
+export interface LoanDetails {
+  principal: number;
+  interestRate: number;
+  isDeferred: boolean;
+  defermentEndDate?: Date;
+  paymentSchedule?: PaymentSchedule;
 }
 
 export class Account {
@@ -17,7 +30,9 @@ export class Account {
     public currentBalance: number,
     public isActive: boolean,
     public apr?: number,
-    public isClosed: boolean = false
+    public isClosed: boolean = false,
+    public paymentSchedule?: PaymentSchedule,
+    public loanDetails?: LoanDetails[]  // For accounts with multiple loans (like Nelnet)
   ) {}
 
   get paymentPercentage(): number {
@@ -44,7 +59,13 @@ export const ACCOUNTS: Account[] = [
     1500.00,
     1471.76,
     true,
-    26.24
+    26.24,
+    false,
+    {
+      dueDate: new Date('2025-04-30'),
+      frequency: 'MONTHLY',
+      minimumPayment: 65.00
+    }
   ),
   new Account(
     '2',
@@ -54,7 +75,13 @@ export const ACCOUNTS: Account[] = [
     1000.00,
     994.80,
     true,
-    27.24
+    27.24,
+    false,
+    {
+      dueDate: new Date('2025-05-06'),
+      frequency: 'MONTHLY',
+      minimumPayment: 35.00
+    }
   ),
   new Account(
     '3',
@@ -64,7 +91,13 @@ export const ACCOUNTS: Account[] = [
     1100.00,
     605.26,
     true,
-    28.87
+    28.87,
+    false,
+    {
+      dueDate: new Date('2025-05-13'),
+      frequency: 'MONTHLY',
+      minimumPayment: 36.52
+    }
   ),
   new Account(
     '4',
@@ -74,7 +107,13 @@ export const ACCOUNTS: Account[] = [
     627.85,
     523.21,
     true,
-    0.00
+    0.00,
+    false,
+    {
+      dueDate: new Date('2025-05-01'),
+      frequency: 'MONTHLY',
+      minimumPayment: 104.65
+    }
   ),
   new Account(
     '5',
@@ -84,7 +123,13 @@ export const ACCOUNTS: Account[] = [
     16200.00,
     14117.70,
     true,
-    9.90
+    9.90,
+    false,
+    {
+      dueDate: new Date('2025-05-01'),
+      frequency: 'MONTHLY',
+      minimumPayment: 0  // Currently in forbearance
+    }
   ),
   new Account(
     '6',
@@ -94,7 +139,103 @@ export const ACCOUNTS: Account[] = [
     25560.30,
     25560.30,
     true,
-    4.32
+    4.32,
+    false,
+    {
+      dueDate: new Date('2026-08-26'),  // Forbearance end date
+      frequency: 'MONTHLY',
+      minimumPayment: 0  // Currently in forbearance
+    },
+    [  // Individual loan details from your spreadsheet
+      {
+        principal: 3500.00,
+        interestRate: 3.760,
+        isDeferred: true,
+        defermentEndDate: new Date('2026-08-26'),
+        paymentSchedule: {
+          dueDate: new Date('2026-08-26'),
+          frequency: 'MONTHLY',
+          minimumPayment: 0
+        }
+      },
+      {
+        principal: 3500.00,
+        interestRate: 4.290,
+        isDeferred: true,
+        defermentEndDate: new Date('2026-08-26'),
+        paymentSchedule: {
+          dueDate: new Date('2026-08-26'),
+          frequency: 'MONTHLY',
+          minimumPayment: 0
+        }
+      },
+      {
+        principal: 2277.53,
+        interestRate: 3.760,
+        isDeferred: true,
+        defermentEndDate: new Date('2026-08-26'),
+        paymentSchedule: {
+          dueDate: new Date('2026-08-26'),
+          frequency: 'MONTHLY',
+          minimumPayment: 0
+        }
+      },
+      {
+        principal: 2180.67,
+        interestRate: 4.450,
+        isDeferred: true,
+        defermentEndDate: new Date('2026-08-26'),
+        paymentSchedule: {
+          dueDate: new Date('2026-08-26'),
+          frequency: 'MONTHLY',
+          minimumPayment: 0
+        }
+      },
+      {
+        principal: 2104.34,
+        interestRate: 5.050,
+        isDeferred: true,
+        defermentEndDate: new Date('2026-08-26'),
+        paymentSchedule: {
+          dueDate: new Date('2026-08-26'),
+          frequency: 'MONTHLY',
+          minimumPayment: 0
+        }
+      },
+      {
+        principal: 1000.00,
+        interestRate: 3.760,
+        isDeferred: true,
+        defermentEndDate: new Date('2026-08-26'),
+        paymentSchedule: {
+          dueDate: new Date('2026-08-26'),
+          frequency: 'MONTHLY',
+          minimumPayment: 0
+        }
+      },
+      {
+        principal: 5500.00,
+        interestRate: 4.450,
+        isDeferred: true,
+        defermentEndDate: new Date('2026-08-26'),
+        paymentSchedule: {
+          dueDate: new Date('2026-08-26'),
+          frequency: 'MONTHLY',
+          minimumPayment: 0
+        }
+      },
+      {
+        principal: 5500.00,
+        interestRate: 5.050,
+        isDeferred: true,
+        defermentEndDate: new Date('2026-08-26'),
+        paymentSchedule: {
+          dueDate: new Date('2026-08-26'),
+          frequency: 'MONTHLY',
+          minimumPayment: 0
+        }
+      }
+    ]
   ),
   new Account(
     '7',
@@ -125,7 +266,12 @@ export const ACCOUNTS: Account[] = [
     2587.60,
     true,
     0.00,
-    true
+    true,
+    {
+      dueDate: new Date('2025-05-02'),
+      frequency: 'MONTHLY',
+      minimumPayment: 50.00
+    }
   ),
   new Account(
     '10',
