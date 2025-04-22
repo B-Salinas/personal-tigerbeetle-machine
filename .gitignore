@@ -1,0 +1,16 @@
+# Binary and data files
+tigerbeetle
+*.tigerbeetle
+*.zip
+
+# Environment and configuration
+.env
+config/secrets.json
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Development environment
+.vscode/
+.idea/
