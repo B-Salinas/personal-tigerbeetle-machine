@@ -11,6 +11,17 @@ export const client = createClient({
   replica_addresses: REPLICA_ADDRESSES,
 });
 
+// Helper function to convert account categories to numbers
+function categoryToNumber(category: string): number {
+  switch (category) {
+    case 'CHECKING': return 1;
+    case 'SAVINGS': return 2;
+    case 'CREDIT_CARD': return 3;
+    case 'LOAN': return 4;
+    default: return 0;
+  }
+}
+
 // Function to test the connection
 export async function testConnection(): Promise<boolean> {
   try {
@@ -51,7 +62,7 @@ export async function initializeAccounts(): Promise<void> {
       debits_posted: BigInt(Math.round(account.currentBalance * 100)),
       credits_pending: 0n,
       credits_posted: BigInt(Math.round(account.totalAmount * 100)),
-      user_data: BigInt(account.category),
+      user_data: BigInt(categoryToNumber(account.category)),
       user_data_128: 0n,
       user_data_64: 0n,
       user_data_32: 0,
