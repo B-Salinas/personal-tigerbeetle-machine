@@ -2,6 +2,8 @@ import { testConnection, initializeAccounts, closeConnection, getAccountBalances
 
 async function main() {
   try {
+    console.log('Starting TigerBeetle connection test...');
+    
     // Test the connection
     const isConnected = await testConnection();
     if (!isConnected) {
@@ -10,9 +12,11 @@ async function main() {
     }
 
     // Initialize accounts
+    console.log('\nInitializing accounts...');
     await initializeAccounts();
 
     // Get and display account balances
+    console.log('\nFetching account balances...');
     const balances = await getAccountBalances();
     console.log('\nAccount Balances:');
     balances.forEach((balanceInfo, id) => {

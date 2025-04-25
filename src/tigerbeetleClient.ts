@@ -55,24 +55,36 @@ export async function testConnection(): Promise<boolean> {
 // Function to initialize our accounts in TigerBeetle
 export async function initializeAccounts(): Promise<void> {
   try {
+    console.log('Starting account initialization...');
+    console.log(`Number of accounts to create: ${ACCOUNTS.length}`);
+    
     // Convert our account data to TigerBeetle account format
-    const accounts = ACCOUNTS.map((account, index) => ({
-      id: BigInt(index + 1),
-      debits_pending: 0n,
-      debits_posted: BigInt(Math.round(account.currentBalance * 100)),
-      credits_pending: 0n,
-      credits_posted: BigInt(Math.round(account.totalAmount * 100)),
-      user_data: BigInt(categoryToNumber(account.category)),
-      user_data_128: 0n,
-      user_data_64: 0n,
-      user_data_32: 0,
-      reserved: 0,
-      ledger: 1,
-      code: 1,
-      flags: account.isClosed ? 1 : 0,
-      timestamp: 0n,
-    }));
+    const accounts = ACCOUNTS.map((account, index) => {
+      console.log(`\nPreparing account ${index + 1}:`);
+      console.log(`  Name: ${account.name}`);
+      console.log(`  Category: ${account.category}`);
+      console.log(`  Current Balance: $${account.currentBalance.toFixed(2)}`);
+      console.log(`  Total Amount: $${account.totalAmount.toFixed(2)}`);
+      
+      return {
+        id: BigInt(index + 1),
+        debits_pending: 0n,
+        debits_posted: BigInt(Math.round(account.currentBalance * 100)),
+        credits_pending: 0n,
+        credits_posted: BigInt(Math.round(account.totalAmount * 100)),
+        user_data: BigInt(categoryToNumber(account.category)),
+        user_data_128: 0n,
+        user_data_64: 0n,
+        user_data_32: 0,
+        reserved: 0,
+        ledger: 1,
+        code: 1,
+        flags: account.isClosed ? 1 : 0,
+        timestamp: 0n,
+      };
+    });
 
+    console.log('\nCreating accounts in TigerBeetle...');
     await client.createAccounts(accounts);
     console.log('Successfully initialized accounts in TigerBeetle!');
   } catch (error) {
@@ -92,15 +104,21 @@ export async function closeConnection(): Promise<void> {
   }
 }
 
-// Add this function after the closeConnection function
+// Function to get account balances
 export async function getAccountBalances(): Promise<Map<bigint, { currentBalance: number; totalAmount: number }>> {
   try {
+    console.log('Getting account balances...');
+    const accountIds = [...Array(ACCOUNTS.length).keys()].map(i => BigInt(i + 1));
+    console.log(`Looking up ${accountIds.length} accounts`);
+    
     // Get all accounts
-    const accounts = await client.lookupAccounts([...Array(ACCOUNTS.length).keys()].map(i => BigInt(i + 1)));
+    const accounts = await client.lookupAccounts(accountIds);
+    console.log(`Found ${accounts.length} accounts`);
     
     // Create a map of account IDs to balance information
     const balances = new Map<bigint, { currentBalance: number; totalAmount: number }>();
     accounts.forEach(account => {
+      console.log(`Processing account ${account.id}`);
       balances.set(account.id, {
         currentBalance: Number(account.debits_posted) / 100,
         totalAmount: Number(account.credits_posted) / 100
@@ -111,36 +129,5 @@ export async function getAccountBalances(): Promise<Map<bigint, { currentBalance
   } catch (error) {
     console.error('Failed to get account balances:', error);
     throw error;
-  }
-}
-
-async function main() {
-  try {
-    // Test the connection
-    const isConnected = await testConnection();
-    if (!isConnected) {
-      console.error('Failed to connect to TigerBeetle server');
-      process.exit(1);
-    }
-
-    // Initialize accounts
-    await initializeAccounts();
-
-    // Get and display account balances
-    const balances = await getAccountBalances();
-    console.log('\nAccount Balances:');
-    balances.forEach((balanceInfo, id) => {
-      console.log(`Account ${id}:`);
-      console.log(`  Current Balance: $${balanceInfo.currentBalance.toFixed(2)}`);
-      console.log(`  Total Amount: $${balanceInfo.totalAmount.toFixed(2)}`);
-      console.log(`  Remaining: $${(balanceInfo.totalAmount - balanceInfo.currentBalance).toFixed(2)}`);
-      console.log('---');
-    });
-
-    // Close the connection
-    await closeConnection();
-  } catch (error) {
-    console.error('Error during testing:', error);
-    process.exit(1);
   }
 } 
