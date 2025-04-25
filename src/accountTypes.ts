@@ -44,7 +44,7 @@ export class Account {
 export const ACCOUNTS: Account[] = [
   new Account(
     '0',
-    'Security First CU',
+    'Security First Credit Union',
     AccountCategory.CHECKING,
     '9410',
     0,
@@ -53,7 +53,7 @@ export const ACCOUNTS: Account[] = [
   ),
   new Account(
     '1',
-    'GS 3286',
+    'Goldman Sachs 3286',
     AccountCategory.CREDIT_CARD,
     '3286',
     1500.00,
@@ -69,7 +69,7 @@ export const ACCOUNTS: Account[] = [
   ),
   new Account(
     '2',
-    'BOFA 0273',
+    'Bank of America 0273',
     AccountCategory.CREDIT_CARD,
     '0273',
     1000.00,
@@ -259,7 +259,7 @@ export const ACCOUNTS: Account[] = [
   ),
   new Account(
     '9',
-    'BOFA 0512',
+    'Bank of America 0512',
     AccountCategory.CHECKING,
     '0512',
     4300.49,
