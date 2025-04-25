@@ -1,4 +1,4 @@
-import { testConnection, initializeAccounts, closeConnection, getAccountBalances } from './tigerbeetleClient';
+import { testConnection, initializeAccounts, closeConnection, getAccountBalances, client } from './tigerbeetleClient';
 
 async function main() {
   try {
@@ -13,7 +13,7 @@ async function main() {
 
     // Initialize accounts
     console.log('\nInitializing accounts...');
-    await initializeAccounts();
+    await initializeAccounts(client);
 
     // Get and display account balances
     console.log('\nFetching account balances...');
