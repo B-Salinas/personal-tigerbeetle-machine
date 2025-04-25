@@ -29,7 +29,7 @@ export async function testConnection(): Promise<boolean> {
   try {
     // Try to create a test account to verify connection
     const testAccount = {
-      id: 999999n, // Using a high number to avoid conflicts with real accounts
+      id: 999999n,
       debits_pending: 0n,
       debits_posted: 0n,
       credits_pending: 0n,
@@ -45,11 +45,56 @@ export async function testConnection(): Promise<boolean> {
       timestamp: 0n,
     };
 
-    await client.createAccounts([testAccount]);
-    console.log('Successfully connected to TigerBeetle server!');
-    return true;
+    try {
+      await client.createAccounts([testAccount]);
+      console.log('Successfully connected to TigerBeetle server!');
+      return true;
+    } catch (createError: any) {
+      // If account already exists, that's fine - we're still connected
+      if (createError.message && createError.message.includes('exists')) {
+        console.log('Successfully connected to TigerBeetle server! (test account already exists)');
+        return true;
+      }
+      throw createError;
+    }
   } catch (error) {
     console.error('Failed to connect to TigerBeetle server:', error);
+    return false;
+  }
+}
+
+// Function to verify a single account was created correctly
+async function verifyAccount(id: bigint, expectedDebits: bigint, expectedCredits: bigint): Promise<boolean> {
+  try {
+    // Try up to 3 times with a small delay between attempts
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      console.log(`Verification attempt ${attempt} for account ${id}`);
+      
+      const [account] = await client.lookupAccounts([id]);
+      if (!account) {
+        console.log(`Account ${id} not found on attempt ${attempt}, waiting 100ms...`);
+        await new Promise(resolve => setTimeout(resolve, 100));
+        continue;
+      }
+      
+      console.log(`Verifying account ${id}:`);
+      console.log(`  Expected debits: ${expectedDebits}, got: ${account.debits_posted}`);
+      console.log(`  Expected credits: ${expectedCredits}, got: ${account.credits_posted}`);
+      console.log(`  Code: ${account.code}`);
+      console.log(`  Flags: ${account.flags}`);
+      
+      if (account.debits_posted !== expectedDebits || account.credits_posted !== expectedCredits) {
+        console.error(`Account ${id} has incorrect balances`);
+        return false;
+      }
+      
+      return true;
+    }
+    
+    console.error(`Account ${id} not found after 3 attempts`);
+    return false;
+  } catch (error) {
+    console.error(`Failed to verify account ${id}:`, error);
     return false;
   }
 }
@@ -81,7 +126,7 @@ export async function initializeAccounts(): Promise<void> {
         user_data_32: 0,
         reserved: 0,
         ledger: 1,
-        code: 1,
+        code: categoryToNumber(account.category),
         flags: (() => {
           let flags = 0;
           
@@ -114,15 +159,56 @@ export async function initializeAccounts(): Promise<void> {
       console.log('TigerBeetle account data:', {
         id: tigerbeetleAccount.id.toString(),
         debits_posted: tigerbeetleAccount.debits_posted.toString(),
-        credits_posted: tigerbeetleAccount.credits_posted.toString()
+        credits_posted: tigerbeetleAccount.credits_posted.toString(),
+        code: tigerbeetleAccount.code,
+        flags: tigerbeetleAccount.flags
       });
       
       return tigerbeetleAccount;
     });
 
-    console.log('\nCreating accounts in TigerBeetle...');
-    const result = await client.createAccounts(accounts);
-    console.log('Create accounts result:', result);
+    // Try to create each account individually to better handle errors
+    for (const account of accounts) {
+      try {
+        // Wait a small amount before each account creation
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
+        const result = await client.createAccounts([account]);
+        console.log(`Created account ${account.id} successfully`);
+        
+        // Wait a small amount after creation before verification
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
+        // Verify the account was created correctly
+        const verified = await verifyAccount(
+          account.id,
+          account.debits_posted,
+          account.credits_posted
+        );
+        
+        if (!verified) {
+          console.error(`Account ${account.id} verification failed`);
+          throw new Error(`Account ${account.id} verification failed`);
+        }
+        
+      } catch (error: any) {
+        if (error.message && error.message.includes('exists')) {
+          console.log(`Account ${account.id} already exists, verifying...`);
+          const verified = await verifyAccount(
+            account.id,
+            account.debits_posted,
+            account.credits_posted
+          );
+          if (!verified) {
+            throw new Error(`Existing account ${account.id} has incorrect balances`);
+          }
+        } else {
+          console.error(`Failed to create account ${account.id}:`, error);
+          throw error;
+        }
+      }
+    }
+
     console.log('Successfully initialized accounts in TigerBeetle!');
   } catch (error) {
     console.error('Failed to initialize accounts:', error);
@@ -148,21 +234,32 @@ export async function getAccountBalances(): Promise<Map<bigint, { currentBalance
     const accountIds = [...Array(ACCOUNTS.length).keys()].map(i => BigInt(i + 100)); // Match the new ID scheme
     console.log(`Looking up ${accountIds.length} accounts with IDs:`, accountIds);
     
-    // Get all accounts
-    const accounts = await client.lookupAccounts(accountIds);
-    console.log(`Found ${accounts.length} accounts`);
+    // Get all accounts in smaller batches to avoid any potential limits
+    const batchSize = 5;
+    const allAccounts = [];
     
-    if (accounts.length !== ACCOUNTS.length) {
-      console.warn(`Warning: Expected ${ACCOUNTS.length} accounts but found ${accounts.length}`);
-      console.log('Account IDs found:', accounts.map(a => a.id));
+    for (let i = 0; i < accountIds.length; i += batchSize) {
+      const batchIds = accountIds.slice(i, i + batchSize);
+      console.log(`Looking up batch of accounts:`, batchIds);
+      const batchAccounts = await client.lookupAccounts(batchIds);
+      allAccounts.push(...batchAccounts);
+    }
+    
+    console.log(`Found ${allAccounts.length} accounts`);
+    
+    if (allAccounts.length !== ACCOUNTS.length) {
+      console.warn(`Warning: Expected ${ACCOUNTS.length} accounts but found ${allAccounts.length}`);
+      console.log('Account IDs found:', allAccounts.map(a => a.id));
     }
     
     // Create a map of account IDs to balance information
     const balances = new Map<bigint, { currentBalance: number; totalAmount: number }>();
-    accounts.forEach(account => {
+    allAccounts.forEach(account => {
       console.log(`Processing account ${account.id}:`);
       console.log(`  debits_posted: ${account.debits_posted}`);
       console.log(`  credits_posted: ${account.credits_posted}`);
+      console.log(`  code: ${account.code}`);
+      console.log(`  flags: ${account.flags}`);
       
       balances.set(account.id, {
         currentBalance: Number(account.debits_posted) / 100,
