@@ -20,7 +20,7 @@ function categoryToNumber(category: string): number {
     case 'LOAN': return 4;
     case 'STUDENT_LOAN': return 5;
     case 'IOU': return 6;
-    default: return 0;
+    default: return 1; // Default to checking account type instead of 0
   }
 }
 
